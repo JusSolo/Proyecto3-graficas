@@ -1,6 +1,10 @@
-use crate::Uniforms;
 use crate::vertex::Vertex;
 use raylib::prelude::*;
+
+// Añadir estructura Uniforms faltante
+pub struct Uniforms {
+    pub model_matrix: Matrix,
+}
 
 // ==========================================
 // === Transformación del vértice (igual) ===
@@ -47,13 +51,10 @@ fn simple_noise(x: f32, y: f32, z: f32) -> f32 {
 }
 
 pub fn star_shader(pos: &Vector3) -> Vector3 {
-    // Calculamos un “ruido” basado en la posición
     let n = simple_noise(pos.x * 0.1, pos.y * 0.1, pos.z * 0.1);
-    // Mezclamos variación de color
     let base = Vector3::new(1.0, 0.94, 0.6);
     let variation = Vector3::new(0.2 * n, 0.1 * n, 0.05 * n);
     let color = base + variation;
-    // Emisión/un brillo extra — podrías multiplicar por un factor para que parezca que “emite”
     let brightness = 1.0 + n * 0.5;
     color * brightness
 }

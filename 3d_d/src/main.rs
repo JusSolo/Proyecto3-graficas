@@ -1,13 +1,11 @@
-// main.rs (regenerado con correcciones solicitadas)
-// NOTA: Reemplaza este archivo completo por el generado aquí.
-// Si tienes otros módulos (matrix.rs, framebuffer.rs, etc.) no se modifican.
-
+// main.rs actualizado con sistema binario y un planeta extra
 #![allow(dead_code)]
 
 use rand::Rng;
 use raylib::prelude::*;
 use std::f32::consts::PI;
 
+mod fragment;
 mod framebuffer;
 mod line;
 mod matrix;
@@ -18,15 +16,11 @@ mod vertex;
 
 use framebuffer::Framebuffer;
 
-// ==========================================================
-// Estructuras principales
-// ==========================================================
-
 #[derive(Clone)]
 struct Body {
     name: String,
     radius: f32,
-    color: Vec3,
+    color: Color,
     orbit_radius: f32,
     orbit_speed: f32,
     angle_orbit: f32,
@@ -57,11 +51,7 @@ impl Camera2D {
     }
 }
 
-// ==========================================================
-// Dibujo de un círculo lleno en el framebuffer
-// ==========================================================
-
-fn draw_filled_circle(fb: &mut Framebuffer, x0: i32, y0: i32, r: i32, color: Vec3) {
+fn draw_filled_circle(fb: &mut Framebuffer, x0: i32, y0: i32, r: i32, color: Color) {
     for dy in -r..=r {
         for dx in -r..=r {
             if dx * dx + dy * dy <= r * r {
@@ -70,10 +60,6 @@ fn draw_filled_circle(fb: &mut Framebuffer, x0: i32, y0: i32, r: i32, color: Vec
         }
     }
 }
-
-// ==========================================================
-// Cráteres (corregido)
-// ==========================================================
 
 fn draw_craters(fb: &mut Framebuffer, cx: i32, cy: i32, radius: i32) {
     let mut rng = rand::thread_rng();
@@ -87,18 +73,13 @@ fn draw_craters(fb: &mut Framebuffer, cx: i32, cy: i32, radius: i32) {
         let x = cx + (theta.cos() * dist) as i32;
         let y = cy + (theta.sin() * dist) as i32;
 
-        let crater_color = Vec3::new(0.7, 0.7, 0.65);
+        let crater_color = Color::new(179, 179, 166, 255);
         draw_filled_circle(fb, x, y, crater_r, crater_color);
     }
 }
 
-// ==========================================================
-// Cálculo de posiciones orbitales
-// ==========================================================
-
 fn compute_world_position(bodies: &[Body], index: usize) -> (f32, f32) {
     let b = &bodies[index];
-    let (_x, _y) = (0.0, 0.0);
 
     if let Some(p) = b.parent {
         let (px, py) = compute_world_position(bodies, p);
@@ -109,10 +90,6 @@ fn compute_world_position(bodies: &[Body], index: usize) -> (f32, f32) {
         (0.0, 0.0)
     }
 }
-
-// ==========================================================
-// Input
-// ==========================================================
 
 fn handle_input_sim(rl: &mut RaylibHandle, cam: &mut Camera2D) {
     if rl.is_key_down(KeyboardKey::KEY_LEFT) {
@@ -130,23 +107,19 @@ fn handle_input_sim(rl: &mut RaylibHandle, cam: &mut Camera2D) {
     }
 }
 
-// ==========================================================
-// Main: Simulación
-// ==========================================================
-
 fn main() {
     let (mut rl, thread) = raylib::init()
         .size(1200, 900)
-        .title("Sistema Solar 2D - Rust")
+        .title("Sistema Solar Binario 2D - Rust")
         .build();
 
     let mut fb = Framebuffer::new(1200, 900);
 
     let mut bodies = vec![
         Body {
-            name: "Estrella".into(),
+            name: "SolA".into(),
             radius: 50.0,
-            color: Vec3::new(1.0, 1.0, 0.2),
+            color: Color::YELLOW,
             orbit_radius: 0.0,
             orbit_speed: 0.0,
             angle_orbit: 0.0,
@@ -155,26 +128,48 @@ fn main() {
             parent: None,
         },
         Body {
+            name: "SolB".into(),
+            radius: 40.0,
+            color: Color::new(180, 220, 255, 255), // blanco-azulado
+            orbit_radius: 140.0,
+            orbit_speed: 0.002,
+            angle_orbit: 0.0,
+            self_rot_speed: 0.01,
+            angle_rotation: 0.0,
+            parent: Some(0),
+        },
+        Body {
             name: "PlanetaA".into(),
             radius: 24.0,
-            color: Vec3::new(0.3, 0.6, 1.0),
+            color: Color::new(77, 153, 255, 255),
             orbit_radius: 210.0,
             orbit_speed: 0.004,
             angle_orbit: 0.0,
             self_rot_speed: 0.015,
             angle_rotation: 0.0,
-            parent: Some(0),
+            parent: Some(1),
         },
         Body {
             name: "LunaA".into(),
             radius: 8.0,
-            color: Vec3::new(0.6, 0.6, 0.6),
+            color: Color::new(153, 153, 153, 255),
             orbit_radius: 48.0,
             orbit_speed: 0.03,
             angle_orbit: 0.0,
             self_rot_speed: 0.02,
             angle_rotation: 0.0,
-            parent: Some(1),
+            parent: Some(2),
+        },
+        Body {
+            name: "PlanetaB".into(),
+            radius: 18.0,
+            color: Color::new(255, 120, 80, 255), // planeta extra
+            orbit_radius: 310.0,
+            orbit_speed: 0.003,
+            angle_orbit: 1.0,
+            self_rot_speed: 0.01,
+            angle_rotation: 0.0,
+            parent: Some(0),
         },
     ];
 
@@ -191,17 +186,14 @@ fn main() {
         let sw = rl.get_screen_width();
         let sh = rl.get_screen_height();
 
-        // input
         handle_input_sim(&mut rl, &mut cam);
 
-        // update bodies
         for b in bodies.iter_mut() {
             b.angle_orbit += b.orbit_speed;
             b.angle_rotation += b.self_rot_speed;
         }
 
-        // render
-        fb.clear(Vec3::new(0.02, 0.02, 0.07));
+        fb.clear_with_color(Color::new(5, 5, 18, 255));
 
         for (i, body) in bodies.iter().enumerate() {
             let (wx, wy) = compute_world_position(&bodies, i);

@@ -1,8 +1,9 @@
-//fragment.rs
+// fragment.rs
 #![allow(dead_code)]
 
 use raylib::math::{Vector2, Vector3};
 
+#[derive(Clone, Debug)]
 pub struct Fragment {
     pub position: Vector2,
     pub color: Vector3,
